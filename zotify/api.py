@@ -2,6 +2,7 @@ from __future__ import annotations
 import music_tag
 import requests
 from uuid import uuid4
+from librespot.audio.decoders import AudioQuality, SuperAudioFormat
 
 from zotify.config import Zotify, Streamer
 from zotify.const import *
@@ -689,6 +690,38 @@ class Track(DLContent):
     _ext = EXT_MAP.get(Zotify.CONFIG.get_download_format().lower(), "ogg")
     _url = TRACK_URL
     
+    @staticmethod
+    def source_copy_extension_for_codec(codec_name: str) -> str:
+        return SOURCE_COPY_EXT_MAP.get(codec_name, EXT_MAP.get(codec_name, codec_name))
+    
+    @classmethod
+    def expected_output_extension(cls) -> str:
+        quality = Zotify.DOWNLOAD_QUALITY
+        is_lossless_source = (
+            cls._codec == "copy"
+            and quality is not None
+            and getattr(quality, "preferred", None) is AudioQuality.LOSSLESS
+            and getattr(quality, "format_filter", None) is SuperAudioFormat.FLAC
+        )
+        return "flac" if is_lossless_source else cls._ext
+    
+    def output_path_for_source_codec(self, temppath: PurePath, path: PurePath) -> PurePath:
+        if self._codec != "copy":
+            return path
+        try:
+            source_ext = self.source_copy_extension_for_codec(self.get_audio_codec(temppath))
+        except ffmpy.FFExecutableNotFoundError:
+            Printer.hashtaged(PrintChannel.WARNING, 'FFMPEG NOT FOUND\n' +
+                                                    'SKIPPING CODEC ANALYSIS - OUTPUT EXTENSION ASSUMED FROM CONFIG')
+            return path
+        except Exception as e:
+            Printer.hashtaged(PrintChannel.WARNING, 'UNKNOWN ERROR\n' +
+                                                    'SKIPPING CODEC ANALYSIS - OUTPUT EXTENSION ASSUMED FROM CONFIG')
+            Printer.traceback(e)
+            return path
+        source_path = path.with_suffix(f".{source_ext}")
+        return path if source_path == path else check_path_dupes(source_path)
+    
     def __init__(self, uri: str) -> None:
         super().__init__(uri)
         self.disc_number    : int                   = None
@@ -758,7 +791,7 @@ class Track(DLContent):
         for replstr, md_val in repl_dict.items():
             output_template = output_template.replace(replstr, fix_filename(md_val))
         
-        return Zotify.CONFIG.get_root_path() / f"{output_template}.{self._ext}"
+        return Zotify.CONFIG.get_root_path() / f"{output_template}.{self.expected_output_extension()}"
     
     def check_skippable(self, parent_stack: ParentStack) -> bool:      
         if super().check_skippable(parent_stack): return True
@@ -942,10 +975,12 @@ class Track(DLContent):
             self.fetch_lyrics(parent_stack)
         
         with self.set_dl_status("Converting File"):
+            path = self.output_path_for_source_codec(temppath, path)
             create_download_directory(path.parent)
             time_elapsed_ffmpeg = self.convert_audio_format(temppath, path) # temppath -> path here
             if time_elapsed_ffmpeg is None:
-                path = pathlike_move_safe(temppath, path.with_suffix(".ogg"))
+                fallback_path = path if self._codec == "copy" else path.with_suffix(".ogg")
+                path = pathlike_move_safe(temppath, fallback_path)
             self.mark_downloaded(parent_stack, path)
         
         try: self.write_audio_tags(path, parent_stack)

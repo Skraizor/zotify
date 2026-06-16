@@ -157,8 +157,8 @@ Set arguments in the commandline like this: `-ie False` or `--codec mp3`. Wrap c
 
 | Encoding Options             | Command Line Config Flag            | Description                                                                              | Default Value |
 |------------------------------|-------------------------------------|------------------------------------------------------------------------------------------|---------------|
-| `DOWNLOAD_FORMAT`            | `--codec`, `--download-format`      | Audio codec, copy avoids remuxing (aac, fdk_aac, mp3, ogg, opus, vorbis)                 | copy          |
-| `DOWNLOAD_QUALITY`           | `-q`, `--download-quality`          | Source audio quality, auto selects highest available (normal, high, very_high\*)         | auto          |
+| `DOWNLOAD_FORMAT`            | `--codec`, `--download-format`      | Audio codec, copy avoids re-encoding (aac, fdk_aac, mp3, ogg, opus, vorbis)              | copy          |
+| `DOWNLOAD_QUALITY`           | `-q`, `--download-quality`          | Source audio quality, auto selects highest available (normal, high, very_high\*, lossless\*) | auto          |
 | `TRANSCODE_BITRATE`          | `-b`, `--bitrate`                   | Overwrite the bitrate for FFMPEG encoding (NOT RECOMMENDED)                              |               |
 | `CUSTOM_FFMEPG_ARGS`         | `--custom-ffmpeg-args`              | Additional FFMPEG functions or filters to apply to downloaded audio (space delimited)    |  `""`         |
 
@@ -224,7 +224,9 @@ Set arguments in the commandline like this: `-ie False` or `--codec mp3`. Wrap c
 | `STANDARD_INTERFACE`         | `--standard-interface`              | Silence all non-mandatory prints and loaders, instead show a standardized dashboard      | False         |
 | `FFMPEG_LOG_LEVEL`           | `--ffmpeg-log-level`                | FFMPEG's logged level of detail when completing a transcoded download                    | error         |
 
-**\* very_high (320k) is limited to Premium accounts only**
+**\* very_high (320k) and lossless FLAC are limited to Premium accounts only**
+
+For native Spotify lossless FLAC output, use `--download-quality lossless --download-format copy`. This requests Spotify's FLAC source stream and remuxes it without lossy-to-FLAC transcoding. If lossless is unavailable for the account or track, Zotify falls back to the available source quality and keeps the output extension matched to the downloaded source.
 
 **\*\* Developer Apps created before 2026-02 *may* be legacy**
 

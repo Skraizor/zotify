@@ -203,6 +203,11 @@ EXT_MAP = {
     'opus': 'ogg',
     'vorbis': 'ogg',
 }
+SOURCE_COPY_EXT_MAP = {
+    'flac': 'flac',
+    'vorbis': 'ogg',
+}
+TRACK_FILE_EXTENSIONS = tuple(sorted({*EXT_MAP.values(), *SOURCE_COPY_EXT_MAP.values()}))
 
 # Config Keys
 MANDATORY = 'MANDATORY'

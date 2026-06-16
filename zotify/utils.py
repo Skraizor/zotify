@@ -9,7 +9,7 @@ from pathlib import Path, PurePath
 from shutil import move, copyfile, copyfileobj
 
 from zotify.config import Zotify
-from zotify.const import EXT_MAP
+from zotify.const import TRACK_FILE_EXTENSIONS
 from zotify.termoutput import PrintChannel, Printer
 
 
@@ -72,7 +72,7 @@ def walk_directory_for_tracks(root_path: PurePath):
     Path(root_path).mkdir(parents=True, exist_ok=True)
     for dirpath, dirnames, filenames in os.walk(Path(root_path)):
         for filename in filenames:
-            if filename.endswith(tuple(EXT_MAP.values())):
+            if filename.endswith(TRACK_FILE_EXTENSIONS):
                 yield PurePath(dirpath) / filename
 
 

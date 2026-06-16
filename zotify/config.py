@@ -731,7 +731,7 @@ class Zotify:
     def parse_dl_quality(cls, preference: str | None = None) -> tuple[bool, FormatOnlyAudioQuality, str | None]:
         prem: bool = cls.SESSION.get_user_attribute(TYPE) == PREMIUM
         quality_options: dict[str, tuple[AudioQuality, str | None]] = {
-        'lossless':  (AudioQuality.LOSSLESS,     None ), # upstream API does not yet support lossless, will fallback to auto 
+        'lossless':  (AudioQuality.LOSSLESS,     None ),
         'very_high': (AudioQuality.VERY_HIGH,   '320k'),
         'auto':      (AudioQuality.VERY_HIGH,   '320k') if prem else (AudioQuality.HIGH, '160k'),
         'high':      (AudioQuality.HIGH,        '160k'),
@@ -745,6 +745,7 @@ class Zotify:
             quality, bitrate = quality_options["auto"]
             return prem, format_filter(quality), bitrate
         
+        preference = preference.lower()
         pref = quality_options.get(preference, quality_options["auto"])
         quality, bitrate = quality_options["high"] if (pref[-1] is None or int(pref[-1][:-1]) > 160) and not prem else pref
         return prem, format_filter(quality), bitrate
