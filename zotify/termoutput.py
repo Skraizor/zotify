@@ -55,6 +55,7 @@ class Printer:
     LAST_PRINT: PrintCategory = PrintCategory.NONE
     ACTIVE_LOADER: Loader | None = None
     ACTIVE_PBARS: list[tqdm] = []
+    SINKS = []
     
     # Helpers
     @staticmethod
@@ -162,6 +163,15 @@ class Printer:
                 Zotify.LOGGER.debug(msg)
             else:
                 Zotify.LOGGER.info(msg)
+
+    @classmethod
+    def add_sink(cls, sink) -> None:
+        cls.SINKS.append(sink)
+
+    @classmethod
+    def remove_sink(cls, sink) -> None:
+        if sink in cls.SINKS:
+            cls.SINKS.remove(sink)
     
     @classmethod
     @contextmanager
@@ -176,6 +186,8 @@ class Printer:
     def new_print(channel: PrintChannel, msg: str, category: PrintCategory = PrintCategory.NONE, 
                   end: str = "\n") -> None:
         Printer.logger(msg, channel)
+        for sink in Printer.SINKS:
+            sink(msg, channel, category)
         if channel != PrintChannel.MANDATORY:
             from zotify.config import Zotify
             if Zotify.CONFIG.get_standard_interface():

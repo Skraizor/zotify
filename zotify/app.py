@@ -58,6 +58,10 @@ def filter_search_query(search_query: str, item_types: tuple[str]) -> dict[str, 
 
 
 def fetch_search_display(search_query: str) -> list[str]:
+    return [result[URI] for result in fetch_search_results(search_query)]
+
+
+def fetch_search_results(search_query: str, display: bool = True) -> list[dict[str, str | dict]]:
     table_headers = {
         TRACKS:     ('ID', 'Name', 'Artists'    ),
         ALBUMS:     ('ID', 'Name', 'Artists'    ),
@@ -73,6 +77,8 @@ def fetch_search_display(search_query: str) -> list[str]:
     items: dict[str, list[dict]] = Zotify.invoke_url_nextable(search_url, stripper=tuple(t for t in table_headers if t[:-1] in params[TYPE]),
                                                               max=params.pop(SEARCH_QUERY_SIZE), params=params)
     
+    from zotify.web import flatten_search_results
+    search_results = flatten_search_results(items)
     search_result_uris = []
     for item_type, headers in table_headers.items():
         if not any(items.get(item_type, [])): continue
@@ -102,9 +108,10 @@ def fetch_search_display(search_query: str) -> list[str]:
                        str(s[NAME]) + (" [E]" if s[EXPLICIT] else ""),
                        str(s[PUBLISHER])                                  ] for s in resps]
         search_result_uris.extend([i[URI] for i in resps])
-        Printer.table(item_type.capitalize(), headers, data)
+        if display:
+            Printer.table(item_type.capitalize(), headers, data)
     
-    return search_result_uris
+    return search_results
 
 
 def search_and_select(search: str = ""):

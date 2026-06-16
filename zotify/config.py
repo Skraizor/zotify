@@ -653,6 +653,7 @@ class Zotify:
     # DYNAMIC PER QUERY
     TOTAL_API_CALLS         : int                       = None
     DATETIME_LAUNCH         : str                       = None
+    CANCEL_REQUESTED        : Callable[[], bool] | None = None
     
     @classmethod
     def start(cls) -> None:
@@ -660,6 +661,10 @@ class Zotify:
             Printer.debug(f"Total API Calls: {cls.TOTAL_API_CALLS}")
         cls.DATETIME_LAUNCH = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         cls.TOTAL_API_CALLS = 0
+
+    @classmethod
+    def should_cancel(cls) -> bool:
+        return bool(cls.CANCEL_REQUESTED and cls.CANCEL_REQUESTED())
     
     @classmethod
     def login(cls, args):

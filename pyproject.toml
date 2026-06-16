@@ -24,6 +24,7 @@ classifiers = [
 ]
 dependencies = [
   "librespot @ git+https://github.com/Googolplexed0/librespot-python.git",
+  "Flask",
   "ffmpy",
   "music_tag",
   "Pillow",

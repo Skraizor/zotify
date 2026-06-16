@@ -1289,6 +1289,8 @@ class Container(Content):
     
     def download(self, parent_stack: ParentStack):      
         for item in self.pbar(self._main_items, parent_stack):
+            if Zotify.should_cancel():
+                raise KeyboardInterrupt
             parent_stack.extend([item])
             item.download(parent_stack)
             parent_stack.pop()
@@ -1740,6 +1742,8 @@ class VerifyLibrary(Query):
         self.fetch_extra_metadata()
         parent_stack = ParentStack([self])
         for track in self.pbar(self.requested_objs[0], parent_stack):
+            if Zotify.should_cancel():
+                raise KeyboardInterrupt
             for path in paths_per_track[track]:
                 self.verify_metadata(path, track)
             Printer.refresh_all_pbars(parent_stack.PBARS)

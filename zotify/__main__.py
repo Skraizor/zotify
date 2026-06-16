@@ -7,10 +7,6 @@ It's like youtube-dl, but for that other music platform.
 
 import argparse
 
-from zotify.app import client
-from zotify.config import Zotify, CONFIG_VALUES, DEPRECIATED_CONFIGS
-from zotify.termoutput import Printer
-
 
 class DepreciatedAction(argparse.Action):
     def __init__(self, option_strings, dest, **kwargs):
@@ -19,6 +15,7 @@ class DepreciatedAction(argparse.Action):
         super().__init__(option_strings, dest, **kwargs)
     
     def __call__(self, parser, namespace, values, option_string=None):
+        from zotify.termoutput import Printer
         Printer.depreciated_warning(option_string, self.help, CONFIG=False)
         setattr(namespace, self.dest, values)
 
@@ -28,7 +25,23 @@ DEPRECIATED_FLAGS = (
 )
 
 
-def main():
+def _load_config_arg_metadata():
+    try:
+        from zotify.config import CONFIG_VALUES, DEPRECIATED_CONFIGS
+        return CONFIG_VALUES, DEPRECIATED_CONFIGS
+    except ModuleNotFoundError:
+        return {}, {}
+
+
+def _version_string() -> str:
+    try:
+        from zotify.config import Zotify
+        return f'Zotify {Zotify.VERSION}'
+    except ModuleNotFoundError:
+        return 'Zotify'
+
+
+def build_parser():
     parser = argparse.ArgumentParser(prog='zotify',
         description='A music and podcast downloader needing only Python and FFMPEG.')
     
@@ -37,7 +50,7 @@ def main():
     # no args
     parser.add_argument('--version',
                         action='version',
-                        version=f'Zotify {Zotify.VERSION}',
+                        version=_version_string(),
                         help='Show the version of Zotify')
     parser.add_argument('--persist',
                         action='store_true',
@@ -59,6 +72,20 @@ def main():
                         action='store_true',
                         dest='no_splash',
                         help='Suppress the splash screen when loading')
+    parser.add_argument('--web',
+                        action='store_true',
+                        dest='web',
+                        help='Start the local Zotify web control panel')
+    parser.add_argument('--web-host',
+                        type=str,
+                        default='127.0.0.1',
+                        dest='web_host',
+                        help='Host address for the local web control panel')
+    parser.add_argument('--web-port',
+                        type=int,
+                        default=4382,
+                        dest='web_port',
+                        help='Port for the local web control panel')
     
     # with args
     parser.add_argument('-c', '--config', '--config-location',
@@ -118,6 +145,8 @@ def main():
                            type=flag["type"],
                            help=flag["help"],
                            action='depreciated_ignore_warn')
+
+    CONFIG_VALUES, DEPRECIATED_CONFIGS = _load_config_arg_metadata()
     
     for key in DEPRECIATED_CONFIGS:
         parser.add_argument(*DEPRECIATED_CONFIGS[key]['arg'],
@@ -132,10 +161,24 @@ def main():
                             dest=key.lower(),
                             default=None,
                             )
+    parser.zotify_modes = modes
+    return parser
+
+
+def main():
+    parser = build_parser()
     
     args = parser.parse_args()
+    if args.web:
+        from zotify.web import run_web
+        run_web(args)
+        return
+
+    from zotify.app import client
+    from zotify.config import Zotify
+
     Zotify.boot(args)
-    client(args, modes)
+    client(args, parser.zotify_modes)
 
 
 if __name__ == '__main__':
